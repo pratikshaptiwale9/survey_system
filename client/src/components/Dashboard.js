@@ -1,209 +1,254 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaPlus, FaUsers, FaChartBar, FaClipboardList, FaUserTie, FaCircle } from "react-icons/fa";
+import api from "../api";
 
 function Dashboard() {
+
   const navigate = useNavigate();
 
-  // 🌀 State for Recent Activity (updates on every page load)
-  const [recentActivity, setRecentActivity] = useState([]);
+  const [participantCount, setParticipantCount] = useState(0);
+  const [activities, setActivities] = useState([]);
+  const [surveyCount, setSurveyCount] = useState(0);
+
+  // ✅ ADDED LOGOUT FUNCTION
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+  };
 
   useEffect(() => {
-    const activities = [
-      "Survey 'Community Health' updated by Priya Sharma",
-      "New participant added: David Kim",
-      "Survey 'Water Usage' completed by 10 respondents",
-      "Survey 'Public Transport Feedback' created by Admin",
-      "Participant 'Anjali Mehta' submitted 'Waste Management Survey'",
-    ];
+    fetchCounts();
 
-    // Pick 3 random recent activities every reload
-    const shuffled = activities.sort(() => 0.5 - Math.random()).slice(0, 3);
-    setRecentActivity(shuffled);
+    const interval = setInterval(() => {
+      fetchCounts();
+    }, 10000);
+
+    return () => clearInterval(interval);
+
   }, []);
 
-  // ✅ Styles
-  const containerStyle = {
-    backgroundColor: "#f8f9fc",
-    minHeight: "100vh",
-    fontFamily: "Arial, sans-serif",
-    padding: "40px",
+  const timeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+
+    const intervals = {
+      year: 31536000,
+      month: 2592000,
+      day: 86400,
+      hour: 3600,
+      minute: 60
+    };
+
+    for (let key in intervals) {
+      const value = Math.floor(seconds / intervals[key]);
+      if (value >= 1) {
+        return `${value} ${key}${value > 1 ? "s" : ""} ago`;
+      }
+    }
+
+    return "Just now";
   };
 
-  const headerContainer = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "30px",
-  };
+  const fetchCounts = async () => {
+    try {
 
-  const titleStyle = {
-    color: "#4e73df",
-    fontSize: "32px",
-    fontWeight: "bold",
-  };
+      const participantsRes = await api.get("/participants");
+      const surveyorsRes = await api.get("/surveyors");
+      const surveysRes = await api.get("/surveys");
 
-  const rightContainer = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-end",
-    gap: "15px",
-  };
+      const participants = participantsRes.data || [];
+      const surveyors = surveyorsRes.data || [];
+      const surveys = surveysRes.data || [];
 
-  const settingsButton = {
-    backgroundColor: "#858796",
-    color: "#fff",
-    padding: "10px 18px",
-    border: "none",
-    borderRadius: "10px",
-    fontSize: "14px",
-    cursor: "pointer",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-    transition: "0.3s",
-  };
+      setParticipantCount(participants.length);
+      setSurveyCount(surveys.length);
 
-  const statsContainer = {
-    display: "flex",
-    gap: "15px",
-    alignItems: "center",
-  };
+      let recentActivities = [];
 
-  const statCard = {
-    backgroundColor: "#e6ecff", // ✅ Softer blue background
-    color: "#2e59d9",
-    padding: "20px 30px",
-    borderRadius: "12px",
-    textAlign: "center",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
-  };
+      participants.slice(-2).reverse().forEach((p) => {
+        recentActivities.push({
+          type: "participant",
+          text: `New participant added: ${p.name}`,
+        });
+      });
 
-  const statNumber = {
-    fontSize: "28px",
-    fontWeight: "bold",
-  };
+      surveyors.slice(-2).reverse().forEach((s) => {
+        recentActivities.push({
+          type: "surveyor",
+          text: `New surveyor added: ${s.name}`,
+        });
+      });
 
-  const statLabel = {
-    fontSize: "14px",
-    opacity: 0.9,
-  };
+      surveys.slice(-1).reverse().forEach((s) => {
+        recentActivities.push({
+          type: "survey",
+          text: `Survey "${s.title || "New Survey"}" created`,
+        });
+      });
 
-  const welcomeContainer = {
-    textAlign: "center",
-    marginTop: "80px",
-    marginBottom: "50px",
-  };
+      setActivities(recentActivities.slice(0, 5));
 
-  const welcomeTitle = {
-    fontSize: "26px",
-    color: "#2e59d9",
-    marginBottom: "10px",
-  };
-
-  const welcomeSubtitle = {
-    fontSize: "16px",
-    color: "#5a5c69",
-  };
-
-  const buttonContainer = {
-    textAlign: "center",
-    marginTop: "40px",
-  };
-
-  const buttonStyle = {
-    backgroundColor: "#1cc88a",
-    color: "#fff",
-    padding: "12px 20px",
-    border: "none",
-    borderRadius: "10px",
-    fontSize: "16px",
-    cursor: "pointer",
-    margin: "10px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-    transition: "0.3s",
-  };
-
-  const recentActivityBox = {
-    marginTop: "40px",
-    backgroundColor: "#fff",
-    padding: "25px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-  };
-
-  const activityTitle = {
-    color: "#4e73df",
-    fontSize: "20px",
-    marginBottom: "15px",
-  };
-
-  const handleHover = (e, hover) => {
-    e.target.style.backgroundColor = hover ? "#17a673" : "#1cc88a";
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
-    <div style={containerStyle}>
-      {/* Header */}
-      <div style={headerContainer}>
-        <h1 style={titleStyle}>Dashboard</h1>
 
-        {/* Settings + Stats stacked vertically */}
-        <div style={rightContainer}>
-          <button style={settingsButton} onClick={() => navigate("/settings")}>
-            ⚙️ Settings
+    <div style={styles.container}>
+
+      {/* Sidebar */}
+      <div style={styles.sidebar}>
+        <img src="/logo.png" alt="Company Logo" style={styles.sidebarLogo} />
+
+        <div style={styles.sidebarCenter}>
+          <h1 style={styles.logo}>Dashboard</h1>
+        </div>
+
+        <div style={styles.sidebarBottom}>
+          {/* ✅ UPDATED BUTTON */}
+          <button style={styles.sideBtn} onClick={handleLogout}>
+            Logout
           </button>
-
-          <div style={statsContainer}>
-            <div style={statCard}>
-              <div style={statNumber}>12</div>
-              <div style={statLabel}>Total Surveys</div>
-            </div>
-            <div style={statCard}>
-              <div style={statNumber}>48</div>
-              <div style={statLabel}>Total Participants</div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Welcome Message */}
-      <div style={welcomeContainer}>
-        <h2 style={welcomeTitle}>Welcome, Admin</h2>
-        <p style={welcomeSubtitle}>
-          Overview of Survey Platform activities and quick actions
-        </p>
+      {/* Main */}
+      <div style={styles.main}>
+
+        <div style={styles.dashboardHeader}>
+          <h2 style={styles.dashboardTitle}>Survey Management Dashboard</h2>
+
+          <p style={styles.dashboardText}>
+            Manage surveys, monitor participants, and analyse survey progress
+            from a single control panel.
+          </p>
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div style={styles.actions}>
+
+          <div style={styles.row}>
+            <button style={styles.actionBtn} onClick={()=>navigate("/create-survey")}>
+              <FaPlus style={styles.icon}/> Create Survey
+            </button>
+
+            <button style={styles.actionBtn} onClick={()=>navigate("/view-participants")}>
+              <FaUsers style={styles.icon}/> View Participants
+            </button>
+          </div>
+
+          <div style={styles.row}>
+            <button style={styles.actionBtn} onClick={()=>navigate("/view-survey")}>
+              <FaClipboardList style={styles.icon}/> View Survey
+            </button>
+
+            <button style={styles.actionBtn} onClick={()=>navigate("/manage-surveyor")}>
+              <FaUserTie style={styles.icon}/> Manage Surveyors
+            </button>
+          </div>
+
+          <div style={styles.row}>
+            <button style={styles.actionBtn} onClick={()=>navigate("/survey-analytics")}>
+              <FaChartBar style={styles.icon}/> Survey Analytics
+            </button>
+          </div>
+
+        </div>
+
+        {/* CONTENT SECTION */}
+        <div style={styles.contentSection}>
+
+          <div style={styles.activityBox}>
+            <h3 style={{color:"#3E2723"}}>Recent Activity</h3>
+
+            <ul>
+              {activities.length === 0
+                ? <li>No recent activity</li>
+                : activities.map((act, index) => (
+                  <li key={index} style={styles.activityItem}>
+                    <FaCircle style={{
+                      color:
+                        act.type==="participant" ? "#4CAF50"
+                        : act.type==="survey" ? "#D4A373"
+                        : "#8D6E63",
+                      fontSize:"10px"
+                    }}/>
+                    <span>{act.text}</span>
+                    <small style={styles.time}>{act.time}</small>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+
+          <div style={styles.statsColumn}>
+
+            <div style={styles.totalCard}>
+              <h3>Total Participants</h3>
+              <h1>{participantCount}</h1>
+            </div>
+
+            <div style={styles.targetCard}>
+              <h3>Total Surveys</h3>
+              <h1>{surveyCount}</h1>
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
-      {/* Action Buttons */}
-      <div style={buttonContainer}>
-        {[
-          { text: "Create a Survey", path: "/create-survey" },
-          { text: "View Participants", path: "/view-participants" },
-          { text: "View Surveys", path: "/view-surveys" },
-          { text: "Manage Surveyors", path: "/manage-surveyor" },
-          { text: "Analysis", path: "/analysis" },
-        ].map((btn) => (
-          <button
-            key={btn.text}
-            style={buttonStyle}
-            onMouseEnter={(e) => handleHover(e, true)}
-            onMouseLeave={(e) => handleHover(e, false)}
-            onClick={() => navigate(btn.path)}
-          >
-            {btn.text}
-          </button>
-        ))}
-      </div>
-
-      {/* Recent Activity */}
-      <div style={recentActivityBox}>
-        <h3 style={activityTitle}>Recent Activity</h3>
-        <ul style={{ color: "#5a5c69", lineHeight: "1.8" }}>
-          {recentActivity.map((activity, index) => (
-            <li key={index}>{activity}</li>
-          ))}
-        </ul>
-      </div>
     </div>
+
   );
 }
 
 export default Dashboard;
+
+const styles = {
+  container:{display:"flex",height:"100vh",fontFamily:"Segoe UI",backgroundColor:"#FFF3E0"},
+
+  sidebar:{width:"220px",backgroundColor:"#3E2723",color:"#FFF3E0",padding:"25px 15px",display:"flex",flexDirection:"column",justifyContent:"space-between",alignItems:"center"},
+
+  sidebarLogo:{width:"110px",marginTop:"10px"},
+
+  sidebarCenter:{display:"flex",alignItems:"center",justifyContent:"center",flex:1},
+
+  logo:{fontSize:"22px",fontWeight:"600",textAlign:"center",color:"#FFF3E0"},
+
+  sidebarBottom:{display:"flex",flexDirection:"column",gap:"12px",width:"100%",marginBottom:"20px"},
+
+  sideBtn:{padding:"10px",borderRadius:"6px",border:"1px solid #D4A373",background:"transparent",color:"#FFF3E0",cursor:"pointer",width:"100%"},
+
+  main:{flex:1,padding:"30px"},
+
+  dashboardHeader:{marginBottom:"20px"},
+
+  dashboardTitle:{marginBottom:"5px",color:"#3E2723"},
+
+  dashboardText:{color:"#8D6E63",maxWidth:"650px",fontSize:"14px"},
+
+  actions:{marginBottom:"20px"},
+
+  row:{display:"flex",gap:"20px",marginBottom:"15px"},
+
+  actionBtn:{flex:1,padding:"16px",fontSize:"15px",borderRadius:"10px",border:"none",backgroundColor:"#D4A373",color:"#3E2723",cursor:"pointer",boxShadow:"0 4px 10px rgba(0,0,0,0.15)",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px"},
+
+  icon:{fontSize:"16px"},
+
+  contentSection:{display:"flex",gap:"25px"},
+
+  activityBox:{flex:2,backgroundColor:"white",padding:"22px",borderRadius:"12px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",border:"1px solid #D4A373"},
+
+  activityItem:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"10px",fontSize:"14px",color:"#3E2723"},
+
+  time:{marginLeft:"auto",color:"#8D6E63",fontSize:"12px"},
+
+  statsColumn:{flex:1,display:"flex",flexDirection:"column",gap:"15px"},
+
+  totalCard:{backgroundColor:"#FFFFFF",color:"#3E2723",padding:"18px",borderRadius:"12px",textAlign:"center",boxShadow:"0 4px 10px rgba(0,0,0,0.08)",border:"1px solid #D4A373"},
+
+  targetCard:{backgroundColor:"#FFFFFF",color:"#3E2723",padding:"18px",borderRadius:"12px",textAlign:"center",boxShadow:"0 4px 10px rgba(0,0,0,0.08)",border:"1px solid #D4A373"}
+};

@@ -1,74 +1,84 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";   // 👈 keep this
 
 function Login() {
   const navigate = useNavigate();
+
+  // 🎨 Your template colors
+  const COLORS = {
+    dark: "#3E2723",
+    main: "#D4A373",
+    secondary: "#8D6E63",
+    light: "#FFE0B2",
+    bg: "#FFF3E0",
+    white: "#ffffff",
+  };
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
 
-  const containerStyle = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    background: "linear-gradient(135deg, #74b9ff, #a29bfe)",
-    fontFamily: "'Poppins', sans-serif",
-  };
-
-  const cardStyle = {
-    backgroundColor: "#fff",
-    padding: "40px 50px",
-    borderRadius: "16px",
-    boxShadow: "0 10px 20px rgba(0,0,0,0.2)",
-    minWidth: "350px",
-    textAlign: "center",
-  };
-
-  const inputStyle = {
-    width: "100%",
-    padding: "12px",
-    margin: "10px 0",
-    borderRadius: "8px",
-    border: "1px solid #ccc",
-    fontSize: "15px",
-    outline: "none",
-  };
-
-  const buttonStyle = {
-    width: "100%",
-    padding: "12px",
-    marginTop: "20px",
-    borderRadius: "10px",
-    border: "none",
-    cursor: "pointer",
-    backgroundColor: "#4CAF50",
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: "16px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.2)",
-    transition: "0.3s ease",
-  };
-
-  const buttonHover = {
-    ...buttonStyle,
-    backgroundColor: "#43a047",
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (email && password) {
-      alert(`Welcome ${email}\nRemember Me: ${remember ? "Yes" : "No"}`);
-      navigate("/dashboard");
-    } else {
-      alert("Please enter email and password");
+
+    try {
+      const res = await axios.get(
+        "https://survey-api-iuq9.onrender.com/admins"
+      );
+
+      const users = res.data;
+
+      const user = users.find(
+        (u) => u.email === email && u.password === password
+      );
+
+      if (user) {
+        localStorage.setItem("auth_user", JSON.stringify(user));
+        navigate("/dashboard");
+      } else {
+        alert("Invalid email or password");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Server error");
     }
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h2 style={{ marginBottom: "25px", color: "#2f3640" }}>Login</h2>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        background: `linear-gradient(135deg, ${COLORS.dark}, ${COLORS.main})`,
+        fontFamily: "Poppins, Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: COLORS.bg,
+          padding: "40px 50px",
+          borderRadius: 20,
+          boxShadow: "0 15px 40px rgba(0,0,0,0.3)",
+          minWidth: 350,
+          textAlign: "center",
+        }}
+      >
+        {/* 👇 Company Logo */}
+        <img
+          src="/logo.png"
+          alt="Company Logo"
+          style={{
+            width: 120,
+            marginBottom: 20,
+          }}
+        />
+
+        <h2 style={{ marginBottom: 25, color: COLORS.dark }}>
+          Login
+        </h2>
 
         <form onSubmit={handleLogin}>
           <input
@@ -76,7 +86,14 @@ function Login() {
             placeholder="Enter your Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
+            style={{
+              width: "100%",
+              padding: 12,
+              margin: "10px 0",
+              borderRadius: 10,
+              border: `1px solid ${COLORS.secondary}`,
+              outline: "none",
+            }}
             required
           />
 
@@ -85,18 +102,25 @@ function Login() {
             placeholder="Enter your Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
+            style={{
+              width: "100%",
+              padding: 12,
+              margin: "10px 0",
+              borderRadius: 10,
+              border: `1px solid ${COLORS.secondary}`,
+              outline: "none",
+            }}
             required
           />
 
-          {/* Remember Me & Forgot Password Row */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginTop: "10px",
-              fontSize: "14px",
+              marginTop: 10,
+              fontSize: 14,
+              color: COLORS.dark,
             }}
           >
             <label>
@@ -104,33 +128,44 @@ function Login() {
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                style={{ marginRight: "6px" }}
+                style={{ marginRight: 6 }}
               />
               Remember Me
             </label>
 
             <button
               type="button"
-              onClick={() => alert("Password reset link sent to your email!")}
+              onClick={() =>
+                alert("Password reset link sent to your email!")
+              }
               style={{
                 background: "none",
                 border: "none",
-                color: "#4e73df",
+                color: COLORS.secondary,
                 cursor: "pointer",
                 textDecoration: "underline",
-                fontSize: "14px",
+                fontSize: 14,
               }}
             >
               Forgot Password?
             </button>
           </div>
 
-          {/* Login Button */}
           <button
             type="submit"
-            style={buttonStyle}
-            onMouseOver={(e) => (e.target.style.backgroundColor = "#43a047")}
-            onMouseOut={(e) => (e.target.style.backgroundColor = "#4CAF50")}
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 20,
+              borderRadius: 14,
+              border: "none",
+              cursor: "pointer",
+              background: `linear-gradient(135deg, ${COLORS.dark}, ${COLORS.secondary})`,
+              color: COLORS.white,
+              fontWeight: "bold",
+              fontSize: 16,
+              boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
+            }}
           >
             Login
           </button>
